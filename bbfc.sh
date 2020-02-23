@@ -112,7 +112,7 @@ while IFS=$'\n' read TEXT ;do
         * )   TEXT+=.
       esac
 
-      echo -n \"${n}\" $TEXT" "
+      echo -n ${n} $TEXT" "
 
       newpara=0
     fi
