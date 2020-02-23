@@ -1,10 +1,10 @@
 # biblificate
 
-Converts lyrics into bible verses
+converts lyrics into bible verses
 
 ### Installation
 
-*Requires*: `libxml2-utils`
+*requires*: `libxml2-utils`
 ```
 $ sudo apt-get install libxml2-utils
 ```
