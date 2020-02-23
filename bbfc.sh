@@ -1,5 +1,12 @@
 #!/bin/bash
 
+MAXCOL=40
+# toggles (0=off, 1=on)
+#TODO
+MARKUP=0
+# suppress previously printed lines
+DEDUP=0
+
 unset cache
 declare -A cache
 
@@ -56,9 +63,13 @@ while IFS=$'\n' read TEXT ;do
           [\[*]  )   data=0 ;;
         esac
 
-        # if line seen previously then drop it
-        if [ "${cache["$TEXT"]}" = "1" ]; then
-          data=0
+        if [ "$DEDUP" -eq 1 ]; then
+          # if line seen previously then drop it
+          if [ "${cache["$TEXT"]}" = "1" ]; then
+            data=0
+          else
+            data=1
+          fi
         else
           data=1
         fi
@@ -76,7 +87,7 @@ while IFS=$'\n' read TEXT ;do
 
   if [ "$data" -eq 1 ]; then 
     # record everything seen so far so it can be de-duplicated (e.g. chorus/hook)
-    cache["$TEXT"]=1
+    [ "$DEDUP" -eq 0 ] || cache["$TEXT"]=1
     if [ "$inpara" = 1 ]; then
       # increment verse number
       (( v++ ))
@@ -105,6 +116,16 @@ while IFS=$'\n' read TEXT ;do
         echo
       fi
 
+      # if TEXT starts with a "[" print it -- no numbering (indicates artist singing)
+      case ${TEXT:0:1} in
+        "[" )    
+              echo
+              echo -n $TEXT
+              newpara=0
+              continue
+            ;;
+      esac
+
       # apply punctuation by default on every verse
       case ${TEXT:${#TEXT}-1:${#TEXT}-1} in
         "!"|"?"|"." ) : ;;
@@ -112,7 +133,9 @@ while IFS=$'\n' read TEXT ;do
         * )   TEXT+=.
       esac
 
-      echo -n ${n} $TEXT" "
+      if [ "${MARKDOWN:=0}" -ne 1 ]; then
+        echo -n ${n}${TEXT}" "
+      fi
 
       newpara=0
     fi
@@ -126,5 +149,6 @@ while IFS=$'\n' read TEXT ;do
 done <<< "$(
 # v input
   xmllint --html --xpath 'string(//body//div[@class="lyrics"])' /dev/stdin 2>/dev/null
-)" | fold -w 50 -s | pr -2 -T -w 110 -s'          '
-#  ^ output
+)" | fold -w $MAXCOL -s | pr -T -2 -W $(( $MAXCOL * 2 )) -s'|' | column -t -s '|'
+# ^ output
+#    paginate             columnate              display (pr doesn't handle control chars well)
